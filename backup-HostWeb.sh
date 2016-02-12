@@ -18,6 +18,8 @@ destinoCompWWW="$dir/destinoCompWWW/$hoy"                           ## NO TOCAR!
 anteriorCompWWW="$dir/anteriorCompWWW/$ayer"                        ## NO TOCAR!! # Ruta del backup comprimido del día anterior
 destinoCompDB="$dir/destinoCompDB"                                  ## NO TOCAR!! # Ruta del backup de la base de datos
 logs="$dir/Logs"                                                    ## NO TOCAR!! # Ruta donde se guardan los logs
+respftpWWW="Backups/WWW"
+respftpDB="Backups/DB"
 
 # Borrado de archivos antiguos #
 diasBorraDB="120"                                                  # Dias a los que se borrarán las bases de datos antiguas
@@ -35,7 +37,14 @@ dbpass=""								                                  # Contraseña para la conexi�
 dbhost=""								                            # Dirección de conexión mysql de nuestro proveedor
 dbname=""								                                  # Nombre de la base de datos
 
+# Datos conexión ftp #
+ftpuser=""								                                          # Usuario para la conexión ftp
+ftppass=""							                                           	# Contraseña para la conexión ftp
+ftphost=""							                                           	# Dirección de conexión ftp de nuestro proveedor
+respFtpHost=""
+
 # Varias #
+respaldoftp="no"						                                        # Esta opción es para activar o desactivar las copias de respaldo al servidor ftp "si/no"
 rutas=(" $destinoDesWWW $anteriorDesWWW $destinoCompWWW $anteriorCompWWW $destinoCompDB $logs " )     ## NO TOCAR!! # Para crear los directorios
 dep=(" openssh mariadb expect tar rsync curl" )                     ## NO TOCAR!! # Dependencias necesarias para el script
 variables=(" sshuser sshpass sshhost dbuser dbpass dbhost dbname hoy fecha ayer mes dominio dir origenDesWWW destinoDesWWW anteriorDesWWW destinoCompWWW anteriorCompWWW destinoCompDB logs diasBorraDB diasBorraWWW diasBorraWWWcomp ")
@@ -106,3 +115,16 @@ ssh $sshuser@$sshhost "mysqldump -h $dbhost -u $dbuser -p$dbpass -B $dbname" | g
 #Ejecutar respaldo incremental
 rsync -avz --delete --progress --link-dest=$anteriorDesWWW -e "ssh" $sshuser@$sshhost:$origenDesWWW $destinoDesWWW > $logs/backupWWW-$fecha.log 2>&1
 tar cjvf $destinoCompWWW/$hoy.tar.bz2 $destinoDesWWW/
+
+# Respaldo FTP #
+if [ $respaldoftp = si ]; then
+	ftp -inv  $respFtpHost <<Done-ftp
+	user $ftpuser $ftppass
+	put $destinoCompDB/$hoy/$dbname.sql.gz $respftpDB/$dbname.sql.gz
+	bye
+Done-ftp
+else
+	echo "No tienes configurado el respaldo por ftp"
+	sleep 5
+	clear
+fi
